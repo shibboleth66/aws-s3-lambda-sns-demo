@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simple Event-based Architecture Demo
+
+# Define Parameters
+Parameters:
+    DeploymentName:
+        Type: String
+        Default: "s3-lambda-sns-demo"
+
+# Define Global parameters.
+Globals:
+    Function:
+        Runtime: python2.7
+        MemorySize: 128
+        Timeout: 30        
+
+# Define template Resources.
+Resources:
+
+    # Define IAM Role for Lambda Function
+    IAMRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Ref DeploymentName
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  -
+                    Effect: Allow
+                    Principal:
+                      Service:
+                        - lambda.amazonaws.com
+                    Action:
+                      - sts:AssumeRole
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+            Policies:
+                - 
+                    PolicyName: !Ref DeploymentName
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                          -
+                            Effect: Allow
+                            Action:
+                             - s3:Get*
+                             - sns:Publish
+                            Resource: "*" 
+
+
+    # Define Lambda Function.
+    LambdaFunction:
+        Type: AWS::Serverless::Function 
+        Properties:
+            Description: "S3 Lambda SNS Demo"
+            FunctionName: !Ref DeploymentName
+            CodeUri: build
+            Handler: index.lambda_handler
+            Role: !GetAtt IAMRole.Arn 
+            Environment:
+              Variables:
+                SNSTopic: !Ref SNSTopic
+            Events:
+                ObjectTrigger:
+                    Type: S3
+                    Properties:
+                        Bucket: !Ref S3Bucket
+                        Events: s3:ObjectCreated:*                
+                
+                
+    # Define S3 Bucket
+    S3Bucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: !Ref DeploymentName
+            LifecycleConfiguration:
+                Rules:
+                  -
+                    Status: Enabled
+                    ExpirationInDays: 1
+                    NoncurrentVersionExpirationInDays: 1
+                    AbortIncompleteMultipartUpload:
+                        DaysAfterInitiation: 1
+        
+    # Define SNS Topic
+    SNSTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+            TopicName: !Ref DeploymentName
+            
+
+Outputs:
+
+    LambdaFunction:
+      Description: "Lambda Function Arn"
+      Value: !GetAtt LambdaFunction.Arn 
+
+    IAMRole:
+      Description: "IAM Role Arn"
+      Value: !GetAtt IAMRole.Arn
+      
+    SNSTopic:
+      Description: "SNS Topic Arn"
+      Value: !Ref SNSTopic     
+      
+    S3Bucket:
+      Description: "S3 Bucket Arn"
+      Value: !GetAtt S3Bucket.Arn       

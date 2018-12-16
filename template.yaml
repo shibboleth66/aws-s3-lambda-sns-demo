@@ -2,12 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Simple Event-based Architecture Demo
 
-# Define Parameters
-Parameters:
-    DeploymentName:
-        Type: String
-        Default: "s3-lambda-sns-demo"
-
 # Define Global parameters.
 Globals:
     Function:
@@ -22,7 +16,7 @@ Resources:
     IAMRole:
         Type: AWS::IAM::Role
         Properties:
-            RoleName: !Ref DeploymentName
+            RoleName: !Ref "AWS::StackName"
             AssumeRolePolicyDocument:
                 Version: "2012-10-17"
                 Statement:
@@ -37,7 +31,7 @@ Resources:
                 - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
             Policies:
                 - 
-                    PolicyName: !Ref DeploymentName
+                    PolicyName: !Ref "AWS::StackName"
                     PolicyDocument:
                         Version: "2012-10-17"
                         Statement:
@@ -54,7 +48,7 @@ Resources:
         Type: AWS::Serverless::Function 
         Properties:
             Description: "S3 Lambda SNS Demo"
-            FunctionName: !Ref DeploymentName
+            FunctionName: !Ref "AWS::StackName"
             CodeUri: build
             Handler: index.lambda_handler
             Role: !GetAtt IAMRole.Arn 
@@ -73,7 +67,7 @@ Resources:
     S3Bucket:
         Type: AWS::S3::Bucket
         Properties:
-            BucketName: !Ref DeploymentName
+            BucketName: !Ref "AWS::StackName"
             LifecycleConfiguration:
                 Rules:
                   -
@@ -87,7 +81,7 @@ Resources:
     SNSTopic:
         Type: AWS::SNS::Topic
         Properties:
-            TopicName: !Ref DeploymentName
+            TopicName: !Ref "AWS::StackName"
             
 
 Outputs:
